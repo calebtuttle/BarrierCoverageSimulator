@@ -78,7 +78,10 @@ public class BarrierCoverageSimulator {
 
 
     /**
-     * Get coordinates from greedy algorithm
+     * Get coordinates from greedy algorithm.
+     * TODO: How do we determine which direction the camera faces, and how
+     *  do we indicate its facing direction? How do we determine how much of
+     *  a line a camera covers?
      * @return
      */
     public int[][] getGreedyCoordinates()
