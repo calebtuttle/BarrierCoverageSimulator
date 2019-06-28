@@ -12,7 +12,6 @@ import java.util.Random;
  */
 public class BarrierCoverageSimulator {
 
-    private char[][] planarRegion;
     Random gen;
 
     public static void main(String[] args)
@@ -26,13 +25,21 @@ public class BarrierCoverageSimulator {
      */
     public BarrierCoverageSimulator()
     {
-        planarRegion = getPlanarRegion();
-        placeLines();
-        getAndPlaceGreedy(planarRegion);
-        print2DCharArray(planarRegion);
+        char[][] planarRegion = getPlanarRegion();
+        placeLines(planarRegion);
+//        getAndPlaceGreedy(planarRegion);
+//        print2DCharArray(planarRegion);
 //        printCoordinates();
+//        updateCovered(planarRegion, 0, 0, 1);
+//        print2DCharArray(planarRegion);
+
+        getAndPlaceGreedyV1(planarRegion);
     }
 
+
+    /**
+     * Print random (x, y) coordinates.
+     */
     public void printCoordinates()
     {
         int[][] coordinates = getRandomCoordinates();
@@ -70,12 +77,12 @@ public class BarrierCoverageSimulator {
     }
 
     /**
-     * Place camera sensors (denoted by the char 'S') in the
-     * planar region according to the random algorithm by
-     * modifying planarRegion to have a 'S' wherever a camera
-     * is placed.
+     * Place camera sensors (denoted by the char 'S') in a
+     * the given planar region according to the random algorithm.
+     * @return The given planar region updated with randomly
+     *          placed camera sensors.
      */
-    public void placeRandomly()
+    public char[][] placeRandomly(char[][] planarRegion)
     {
         int[][] coordinates = getRandomCoordinates();
 
@@ -85,6 +92,8 @@ public class BarrierCoverageSimulator {
 
             planarRegion[y][x] = 'S';
         }
+
+        return planarRegion;
     }
 
 
@@ -97,7 +106,7 @@ public class BarrierCoverageSimulator {
     public int[][] getAndPlaceGreedy(char[][] planarRegion)
     {
         int[][] coordinates = new int[10][2];
-        int numBarrierPoints = getNumBarrierPoints(planarRegion, 5, 5);
+        int numBarrierPoints = getNumUncoveredPoints(planarRegion);
 
         int i = 0; // coordinates index
         while (numBarrierPoints > 0) {
@@ -110,7 +119,7 @@ public class BarrierCoverageSimulator {
                             coordinates[i][0] = col; // x
                             coordinates[i][1] = row; // y
 
-                            updateCovered(planarRegion, row, col);
+                            updateCovered(planarRegion, row, col, 1);
                         }
                         else {
                             planarRegion[row][col] = 'S';
@@ -118,7 +127,7 @@ public class BarrierCoverageSimulator {
                             coordinates[i][0] = col; // x
                             coordinates[i][1] = row; // y
 
-                            updateCovered(planarRegion, row, col);
+                            updateCovered(planarRegion, row, col, 1);
                         }
                     }
                     numBarrierPoints--;
@@ -130,8 +139,85 @@ public class BarrierCoverageSimulator {
     }
 
     /**
+     * Get coordinates from greedy algorithm, place the camera sensors on
+     * the plane, and update the plane to reflect which points are covered.
+     * @return a 2D array of the coordinates at which the camera sensors
+     * should be place.
+     */
+    public int[][] getAndPlaceGreedyV1(char[][] planarRegion)
+    {
+        int[][] coordinates = new int[10][2];
+
+
+        // min indices: 0: number of uncovered points. 1: row. 2: col. 3: direction.
+        int[] min = new int[4];
+        min[0] = getNumUncoveredPoints(planarRegion);
+
+        // Goal: decrease number of uncovered barrier points to 0.
+        for (int row = 0; row < planarRegion.length; row++) {
+            for (int col = 0; col < planarRegion[row].length; col++) {
+                // Check coverage at this point when sensor faces right
+                updateCovered(planarRegion, row, col, 1);
+                if (getNumUncoveredPoints(planarRegion) < min[0]) {
+                    min[0] = getNumUncoveredPoints(planarRegion);
+                    min[1] = row;
+                    min[2] = col;
+                    min[3] = 1;
+                }
+
+                // reset planar region to contain only '.' and 'B'
+                planarRegion = getPlanarRegion();
+                placeLines(planarRegion);
+
+                // Check coverage at this point when sensor faces up
+                updateCovered(planarRegion, row, col, 2);
+                if (getNumUncoveredPoints(planarRegion) < min[0]) {
+                    min[0] = getNumUncoveredPoints(planarRegion);
+                    min[1] = row;
+                    min[2] = col;
+                    min[3] = 2;
+                }
+
+                planarRegion = getPlanarRegion(); // reset
+                placeLines(planarRegion);
+
+                // Check coverage at this point when sensor faces left
+                updateCovered(planarRegion, row, col, 3);
+                if (getNumUncoveredPoints(planarRegion) < min[0]) {
+                    min[0] = getNumUncoveredPoints(planarRegion);
+                    min[1] = row;
+                    min[2] = col;
+                    min[3] = 3;
+                }
+
+                planarRegion = getPlanarRegion(); // reset
+                placeLines(planarRegion);
+
+                // Check coverage at this point when sensor faces down
+                updateCovered(planarRegion, row, col, 4);
+                if (getNumUncoveredPoints(planarRegion) < min[0]) {
+                    min[0] = getNumUncoveredPoints(planarRegion);
+                    min[1] = row;
+                    min[2] = col;
+                    min[3] = 4;
+                }
+            }
+        }
+
+        planarRegion = getPlanarRegion();
+        placeLines(planarRegion);
+        updateCovered(planarRegion, min[1], min[2], min[3]);
+        planarRegion[min[1]][min[2]] = 'S';
+        System.out.println(min[3]);
+        print2DCharArray(planarRegion);
+
+        return coordinates;
+    }
+
+    /**
      * Update the planar region to indicate which points on the plane
-     * are covered. 'C' designates a covered point on a barrier line.
+     * are covered after a camera sensor has been placed at the specified
+     * row and column. 'C' designates a covered point on a barrier line.
      * 'i' designates a covered point not on a barrier line, an
      * irrelevant point. This method updates the plane on the
      * assumptions that the camera sensor has a 45 degree viewing
@@ -139,33 +225,88 @@ public class BarrierCoverageSimulator {
      * @param planarRegion
      * @param row The row on which the sensor is placed.
      * @param col The column to the right of where the sensor is placed.
+     * @param direction The direction the camera is facing (1 for right, 2
+     *                  for up, 3 for left, 4 for down).
      */
-    public void updateCovered(char[][] planarRegion, int row, int col)
+    public void updateCovered(char[][] planarRegion, int row, int col, int direction)
     {
-        if (row < planarRegion.length && row > 0) {
-            if (col < planarRegion[row].length && col > 0) {
-                for (int x = col; x < planarRegion[row].length; x++) {
-                    if (planarRegion[row][x] == 'B') {
-                        planarRegion[row][x] = 'C';
-                    }
-                    else if (planarRegion[row][x] == '.') {
-                        planarRegion[row][x] = 'i';
-                    }
+        // Base case
+        if (row >= planarRegion.length || row < 0) {
+            return;
+        }
+        if (col >= planarRegion[row].length || col < 0) {
+            return;
+        }
+
+        // Camera facing right
+        if (direction == 1) {
+            for (int x = col; x < planarRegion[row].length; x++) {
+                if (planarRegion[row][x] == 'B') {
+                    planarRegion[row][x] = 'C';
                 }
-                updateCovered(planarRegion, row + 1, col + 2);
-                updateCovered(planarRegion, row - 1, col + 2);
+                else if (planarRegion[row][x] == '.') {
+                    planarRegion[row][x] = 'i';
+                }
             }
+            updateCovered(planarRegion, row + 1, col + 2, 1);
+            updateCovered(planarRegion, row - 1, col + 2, 1);
+        }
+
+        // Camera facing up
+        if (direction == 2) {
+            for (int y = row; y > 0; y--) {
+                if (planarRegion[y][col] == 'B') {
+                    planarRegion[y][col] = 'C';
+                }
+                else if (planarRegion[y][col] == '.') {
+                    planarRegion[y][col] = 'i';
+                }
+            }
+            updateCovered(planarRegion, row - 2, col + 1, 2);
+            updateCovered(planarRegion, row - 2, col - 1, 2);
+        }
+
+        // Camera facing left
+        if (direction == 3) {
+            for (int x = col; x > 0; x--) {
+                if (planarRegion[row][x] == 'B') {
+                    planarRegion[row][x] = 'C';
+                }
+                else if (planarRegion[row][x] == '.') {
+                    planarRegion[row][x] = 'i';
+                }
+            }
+            updateCovered(planarRegion, row + 1, col - 2, 3);
+            updateCovered(planarRegion, row - 1, col - 2, 3);
+        }
+
+        // Camera facing down
+        if (direction == 4) {
+            for (int y = row; y < planarRegion.length; y++) {
+                if (planarRegion[y][col] == 'B') {
+                    planarRegion[y][col] = 'C';
+                }
+                else if (planarRegion[y][col] == '.') {
+                    planarRegion[y][col] = 'i';
+                }
+            }
+            updateCovered(planarRegion, row + 2, col + 1, 4);
+            updateCovered(planarRegion, row + 2, col - 1, 4);
         }
     }
 
 
     /**
-     * This method places camera sensors according to the specified coordinates.
+     * This method places camera sensors according to the specified coordinates,
+     * and returns the updated planar region.
+     * @param planarRegion The planar region on which the camera sensors are
+     *                     to be placed.
      * @param coordinates The coordinates at which to place the
      *                    cameras. Coordinates must be bound by
      *                    the height and width of the planar region.
+     * @return The updated planar region.
      */
-    public void placeCoordinates(int[][] coordinates)
+    public char[][] placeCoordinates(char[][] planarRegion, int[][] coordinates)
     {
         for (int i = 0; i < coordinates.length; i++) {
             int x = coordinates[i][0];
@@ -173,12 +314,14 @@ public class BarrierCoverageSimulator {
 
             planarRegion[y][x] = 'S';
         }
+
+        return planarRegion;
     }
 
 
     /**
      * Get the planar region to be covered. Dimensions of region:
-     * 15 high by 10 wide.
+     * 15 high by 7 wide.
      * @return a 2D array of chars representing the coverable planar region.
      */
     public char[][] getPlanarRegion()
@@ -195,10 +338,13 @@ public class BarrierCoverageSimulator {
     }
 
     /**
-     * Place the barrier lines in the planar region.
-     * TODO: Determine where the lines should actually be
+     * Place the barrier lines in the given planar region, and
+     * return the updated planar region.
+     * @param planarRegion The planar region on which to place
+     *                     the lines.
+     * @return The updated planar region.
      */
-    public void placeLines()
+    public char[][] placeLines(char[][] planarRegion)
     {
         for (int y = 0; y < planarRegion.length; y++) {
             for (int x = 0; x < planarRegion[y].length; x++) {
@@ -223,20 +369,27 @@ public class BarrierCoverageSimulator {
                 }
             }
         }
+
+        return planarRegion;
     }
 
 
     /**
-     * Get the number of barrier points on the plane.
+     * Get the number of uncovered barrier points on the plane.
      * @param planarRegion The region on which the barrier lines lay.
-     * @param height The height of the rectangle composed of barrier lines.
-     * @param width The width of the rectangle composed of barrier lines.
-     * @return the number of barrier points on the plane.
+     * @return The number of uncovered barrier points on the plane.
      */
-    public int getNumBarrierPoints(char[][] planarRegion, int height, int width)
+    public int getNumUncoveredPoints(char[][] planarRegion)
     {
-        int numBarrierPoints = (height * 2) + (width * 2) - 4;
-        return numBarrierPoints;
+        int numUncoveredPoints = 0;
+        for (int row = 0; row < planarRegion.length; row++) {
+            for (int col = 0; col < planarRegion[row].length; col++) {
+                if (planarRegion[row][col] == 'B') {
+                    numUncoveredPoints++;
+                }
+            }
+        }
+        return numUncoveredPoints;
     }
 
     /**
