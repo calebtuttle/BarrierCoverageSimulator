@@ -29,14 +29,30 @@ public class BarrierCoverageSimulator {
         planarRegion = getPlanarRegion();
         placeLines();
 //        placeRandomly();
-        placeGreedy();
-        System.out.println();
-        print2DArray(planarRegion);
+//        placeGreedy();
+//        System.out.println();
+        print2DCharArray(planarRegion);
+//        printCoordinates();
+
+        int[][] barrierPoints = getBarrierPoints(planarRegion, 5, 5);
+
+    }
+
+    public void printCoordinates()
+    {
+        int[][] coordinates = getRandomCoordinates();
+        coordinates = convertCoordinates(coordinates);
+
+        for(int i = 0; i < coordinates.length; i++) {
+            int x = coordinates[i][0];
+            int y = coordinates[i][1];
+            System.out.println("(" + x + ", " + y + ")");
+        }
     }
 
 
     /**
-     * Get 10 random (x, y) coordinates within the 15 x 10 planar
+     * Get 10 random (x, y) coordinates within the 7 x 15 planar
      * region. The first element in the 2nd dimension of the array
      * is always an x coordinate, while the second element is the y
      * coordinate.
@@ -48,7 +64,7 @@ public class BarrierCoverageSimulator {
         gen = new Random();
 
         for (int i = 0; i < 10; i++) {
-            int x = gen.nextInt(10);
+            int x = gen.nextInt(7);
             int y = gen.nextInt(15);
 
             coordinates[i][0] = x;
@@ -78,10 +94,7 @@ public class BarrierCoverageSimulator {
 
 
     /**
-     * Get coordinates from greedy algorithm.
-     * TODO: How do we determine which direction the camera faces, and how
-     *  do we indicate its facing direction? How do we determine how much of
-     *  a line a camera covers?
+     * Get 10 coordinates from greedy algorithm.
      * @return
      */
     public int[][] getGreedyCoordinates()
@@ -120,13 +133,30 @@ public class BarrierCoverageSimulator {
 
 
     /**
+     * This method places cameras according to the specified coordinates.
+     * @param coordinates The coordinates at which to place the
+     *                    cameras. Coordinates must be bound by
+     *                    the height and width of the planar region.
+     */
+    public void placeCoordinates(int[][] coordinates)
+    {
+        for (int i = 0; i < coordinates.length; i++) {
+            int x = coordinates[i][0];
+            int y = coordinates[i][1];
+
+            planarRegion[y][x] = 'C';
+        }
+    }
+
+
+    /**
      * Get the planar region to be covered. Dimensions of region:
      * 15 high by 10 wide.
      * @return a 2D array of chars representing the coverable planar region.
      */
     public char[][] getPlanarRegion()
     {
-        char[][] planarRegion = new char[15][10];
+        char[][] planarRegion = new char[15][7];
 
         for (int y = 0; y < planarRegion.length; y++) {
             for (int x = 0; x < planarRegion[y].length; x++) {
@@ -146,33 +176,61 @@ public class BarrierCoverageSimulator {
         for (int y = 0; y < planarRegion.length; y++) {
             for (int x = 0; x < planarRegion[y].length; x++) {
                 // Place the top line
-                if (x > 1 && x < 8 && y == 2) {
-                    planarRegion[y][x] = '-';
+                if (x > 1 && x < 7 && y == 2) {
+                    planarRegion[y][x] = 'B';
                 }
 
                 // Place the bottom line
-                if (x > 1 && x < 8 && y == 7) {
-                    planarRegion[y][x] = '-';
+                if (x > 1 && x < 7 && y == 6) {
+                    planarRegion[y][x] = 'B';
                 }
 
                 // Place the left line
-                if (x == 2 && y > 1 && y < 8) {
-                    planarRegion[y][x] = '|';
+                if (x == 2 && y > 1 && y < 6) {
+                    planarRegion[y][x] = 'B';
                 }
 
                 // Place the right line
-                if (x == 7 && y > 1 && y < 8) {
-                    planarRegion[y][x] = '|';
+                if (x == 6 && y > 1 && y < 6) {
+                    planarRegion[y][x] = 'B';
                 }
             }
         }
+    }
+
+
+    /**
+     * Get a 2D array consisting of the coordinates for each point on
+     * each barrier line.
+     * @param planarRegion The region on which the barrier lines lay.
+     * @param height The height of the rectangle composed of barrier lines.
+     * @param width The width of the rectangle composed of barrier lines.
+     */
+    public int[][] getBarrierPoints(char[][] planarRegion, int height, int width)
+    {
+        int perimeter = (height * 2) + (width * 2) - 4;
+
+        int[][] barrierPoints = new int[perimeter][2];
+
+        int i = 0; // barrierPoints index
+        for (int row = 0; row < planarRegion.length; row++) {
+            for (int col = 0; col < planarRegion[row].length; col++) {
+                if (planarRegion[row][col] == 'B') {
+                    barrierPoints[i][0] = col; // the x coordinate
+                    barrierPoints[i][1] = row; // the y coordinate
+                    i++;
+                }
+            }
+        }
+
+        return barrierPoints;
     }
 
     /**
      * Print the given 2D array.
      * @param array the 2D array to be printed.
      */
-    public void print2DArray(char[][] array)
+    public void print2DCharArray(char[][] array)
     {
         for (int y = 0; y < array.length; y++) {
             for (int x = 0; x < array[y].length; x++) {
@@ -180,5 +238,25 @@ public class BarrierCoverageSimulator {
             }
             System.out.println();
         }
+    }
+
+    /**
+     * The origin of the coordinates generated by the algorithms is at
+     * the top left of the graph. This converter takes those coordinates
+     * and returns the corresponding coordinates for the graph whose
+     * origin is at the bottom left of the graph. For example, given
+     * (5, 7) the converter will return (5, 8).
+     * @param array
+     * @return
+     */
+    public int[][] convertCoordinates(int[][] array)
+    {
+        int[][] newArray = array;
+
+        for (int i = 0; i < array.length; i++) {
+            newArray[i][1] = Math.abs(array[i][1] - 14);
+        }
+
+        return newArray;
     }
 }
