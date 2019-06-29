@@ -119,8 +119,7 @@ public class BarrierCoverageSimulator {
 
         // The final planar region, the one that is modified at the
         // end of each iteration of the while loop.
-        char[][] planarRegion2 = getPlanarRegion();
-        placeLines(planarRegion2);
+        char[][] planarRegion2 = planarRegion;
 
         System.out.println("Initial:"); // DELETE THIS LINE
         print2DCharArray(planarRegion1); // DELETE THIS LINE
