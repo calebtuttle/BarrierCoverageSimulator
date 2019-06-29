@@ -27,13 +27,17 @@ public class BarrierCoverageSimulator {
     {
         char[][] planarRegion = getPlanarRegion();
         placeLines(planarRegion);
-//        getAndPlaceGreedy(planarRegion);
 //        print2DCharArray(planarRegion);
-//        printCoordinates();
-//        updateCovered(planarRegion, 0, 0, 1);
+//        System.out.println();
+//        updateCovered(planarRegion, 0, 4, 4);
 //        print2DCharArray(planarRegion);
 
-        getAndPlaceGreedyV1(planarRegion);
+        int[][] coordinates = getAndPlaceGreedy(planarRegion);
+
+//        for (int i = 0; i < coordinates.length; i++) {
+//            System.out.println("(" + coordinates[i][0] + ", " +
+//                    coordinates[i][1] + ")");
+//        }
     }
 
 
@@ -100,116 +104,149 @@ public class BarrierCoverageSimulator {
     /**
      * Get coordinates from greedy algorithm, place the camera sensors on
      * the plane, and update the plane to reflect which points are covered.
+     * @param planarRegion The planar region on which the sensors should be
+     *                     placed according to the greedy algorithm. It should
+     *                     have lines in it before it is passed to this method.
      * @return a 2D array of the coordinates at which the camera sensors
      * should be place.
      */
     public int[][] getAndPlaceGreedy(char[][] planarRegion)
     {
         int[][] coordinates = new int[10][2];
-        int numBarrierPoints = getNumUncoveredPoints(planarRegion);
 
-        int i = 0; // coordinates index
-        while (numBarrierPoints > 0) {
-            for (int row = 0; row < planarRegion.length; row++) {
-                for (int col = 0; col < planarRegion[row].length; col++) {
-                    if (planarRegion[row][col] == 'B') {
-                        if (col > 0) {
-                            planarRegion[row][col - 1] = 'S';
+        // The planar region used to determine which point is best for sensor
+        char[][] planarRegion1 = planarRegion;
 
-                            coordinates[i][0] = col; // x
-                            coordinates[i][1] = row; // y
+        // The final planar region, the one that is modified at the
+        // end of each iteration of the while loop.
+        char[][] planarRegion2 = getPlanarRegion();
+        placeLines(planarRegion2);
 
-                            updateCovered(planarRegion, row, col, 1);
-                        }
-                        else {
-                            planarRegion[row][col] = 'S';
+        System.out.println("Initial:"); // DELETE THIS LINE
+        print2DCharArray(planarRegion1); // DELETE THIS LINE
+        System.out.println();  // DELETE THIS LINE
 
-                            coordinates[i][0] = col; // x
-                            coordinates[i][1] = row; // y
 
-                            updateCovered(planarRegion, row, col, 1);
-                        }
-                    }
-                    numBarrierPoints--;
-                }
-            }
-        }
-
-        return coordinates;
-    }
-
-    /**
-     * Get coordinates from greedy algorithm, place the camera sensors on
-     * the plane, and update the plane to reflect which points are covered.
-     * @return a 2D array of the coordinates at which the camera sensors
-     * should be place.
-     */
-    public int[][] getAndPlaceGreedyV1(char[][] planarRegion)
-    {
-        int[][] coordinates = new int[10][2];
 
 
         // min indices: 0: number of uncovered points. 1: row. 2: col. 3: direction.
         int[] min = new int[4];
-        min[0] = getNumUncoveredPoints(planarRegion);
+        min[0] = getNumUncoveredPoints(planarRegion1);
 
         // Goal: decrease number of uncovered barrier points to 0.
-        for (int row = 0; row < planarRegion.length; row++) {
-            for (int col = 0; col < planarRegion[row].length; col++) {
-                // Check coverage at this point when sensor faces right
-                updateCovered(planarRegion, row, col, 1);
-                if (getNumUncoveredPoints(planarRegion) < min[0]) {
-                    min[0] = getNumUncoveredPoints(planarRegion);
-                    min[1] = row;
-                    min[2] = col;
-                    min[3] = 1;
-                }
+        int i = 0;
+        while (i < 1) {
+            for (int row = 0; row < planarRegion1.length; row++) {
+                for (int col = 0; col < planarRegion1[row].length; col++) {
+                    // Check coverage at this point when sensor faces right
+                    updateCovered(planarRegion1, row, col, 1);
+                    if (getNumUncoveredPoints(planarRegion1) < min[0]) {
+                        min[0] = getNumUncoveredPoints(planarRegion1);
+                        min[1] = row;
+                        min[2] = col;
+                        min[3] = 1;
+                    }
 
-                // reset planar region to contain only '.' and 'B'
-                planarRegion = getPlanarRegion();
-                placeLines(planarRegion);
+                    System.out.println("After update." + " Direction: 1"); // DELETE THIS LINE
+                    print2DCharArray(planarRegion1); // DELETE THIS LINE
+                    System.out.println();  // DELETE THIS LINE
 
-                // Check coverage at this point when sensor faces up
-                updateCovered(planarRegion, row, col, 2);
-                if (getNumUncoveredPoints(planarRegion) < min[0]) {
-                    min[0] = getNumUncoveredPoints(planarRegion);
-                    min[1] = row;
-                    min[2] = col;
-                    min[3] = 2;
-                }
+                    System.out.println("planarRegion2 after first update:");
+                    print2DCharArray(planarRegion2); // DELETE THIS LINE
+                    System.out.println();  // DELETE THIS LINE
 
-                planarRegion = getPlanarRegion(); // reset
-                placeLines(planarRegion);
+                    // reset planar region to contain only '.' and 'B'
+//                    planarRegion1 = getPlanarRegion();
+//                    placeLines(planarRegion1);
+                    // reset planar region to what it was at the beginning of
+                    // this while-loop iteration
+                    planarRegion1 = planarRegion2;
 
-                // Check coverage at this point when sensor faces left
-                updateCovered(planarRegion, row, col, 3);
-                if (getNumUncoveredPoints(planarRegion) < min[0]) {
-                    min[0] = getNumUncoveredPoints(planarRegion);
-                    min[1] = row;
-                    min[2] = col;
-                    min[3] = 3;
-                }
+                    System.out.println("After reset." + " Direction: 1"); // DELETE THIS LINE
+                    print2DCharArray(planarRegion1); // DELETE THIS LINE
+                    System.out.println();  // DELETE THIS LINE
 
-                planarRegion = getPlanarRegion(); // reset
-                placeLines(planarRegion);
+                    // Check coverage at this point when sensor faces up
+                    updateCovered(planarRegion1, row, col, 2);
+                    if (getNumUncoveredPoints(planarRegion1) < min[0]) {
+                        min[0] = getNumUncoveredPoints(planarRegion1);
+                        min[1] = row;
+                        min[2] = col;
+                        min[3] = 2;
+                    }
 
-                // Check coverage at this point when sensor faces down
-                updateCovered(planarRegion, row, col, 4);
-                if (getNumUncoveredPoints(planarRegion) < min[0]) {
-                    min[0] = getNumUncoveredPoints(planarRegion);
-                    min[1] = row;
-                    min[2] = col;
-                    min[3] = 4;
+                    System.out.println("After update." + " Direction: 2"); // DELETE THIS LINE
+                    print2DCharArray(planarRegion1); // DELETE THIS LINE
+                    System.out.println();  // DELETE THIS LINE
+
+//                    planarRegion1 = getPlanarRegion(); // reset
+//                    placeLines(planarRegion1);
+                    // reset planar region to what it was at the beginning of
+                    // this while-loop iteration
+                    planarRegion1 = planarRegion2;
+
+                    System.out.println("After reset." + " Direction: 2"); // DELETE THIS LINE
+                    print2DCharArray(planarRegion1); // DELETE THIS LINE
+                    System.out.println();  // DELETE THIS LINE
+
+                    // Check coverage at this point when sensor faces left
+                    updateCovered(planarRegion1, row, col, 3);
+                    if (getNumUncoveredPoints(planarRegion1) < min[0]) {
+                        min[0] = getNumUncoveredPoints(planarRegion1);
+                        min[1] = row;
+                        min[2] = col;
+                        min[3] = 3;
+                    }
+
+                    System.out.println("After update." + " Direction: 3"); // DELETE THIS LINE
+                    print2DCharArray(planarRegion1); // DELETE THIS LINE
+                    System.out.println();  // DELETE THIS LINE
+
+//                    planarRegion1 = getPlanarRegion(); // reset
+//                    placeLines(planarRegion1);
+                    // reset planar region to what it was at the beginning of
+                    // this while-loop iteration
+                    planarRegion1 = planarRegion2;
+
+                    System.out.println("After reset." + " Direction: 3"); // DELETE THIS LINE
+                    print2DCharArray(planarRegion1); // DELETE THIS LINE
+                    System.out.println();  // DELETE THIS LINE
+
+                    // Check coverage at this point when sensor faces down
+                    updateCovered(planarRegion1, row, col, 4);
+                    if (getNumUncoveredPoints(planarRegion1) < min[0]) {
+                        min[0] = getNumUncoveredPoints(planarRegion1);
+                        min[1] = row;
+                        min[2] = col;
+                        min[3] = 4;
+                    }
+
+                    System.out.println("After update." + " Direction: 4"); // DELETE THIS LINE
+                    print2DCharArray(planarRegion1); // DELETE THIS LINE
+                    System.out.println();  // DELETE THIS LINE
+
+                    planarRegion1 = planarRegion2;
+
+                    System.out.println("After reset." + " Direction: 4"); // DELETE THIS LINE
+                    print2DCharArray(planarRegion1); // DELETE THIS LINE
+                    System.out.println();  // DELETE THIS LINE
                 }
             }
-        }
 
-        planarRegion = getPlanarRegion();
-        placeLines(planarRegion);
-        updateCovered(planarRegion, min[1], min[2], min[3]);
-        planarRegion[min[1]][min[2]] = 'S';
-        System.out.println(min[3]);
-        print2DCharArray(planarRegion);
+            // TODO: remove the following chunk of code. Put it somewhere else
+//            planarRegion1 = getPlanarRegion();
+//            placeLines(planarRegion1);
+//            updateCovered(planarRegion1, min[1], min[2], min[3]);
+//            planarRegion1[min[1]][min[2]] = 'S';
+            updateCovered(planarRegion2, min[1], min[2], min[3]);
+            planarRegion2[min[1]][min[2]] = 'S';
+            System.out.println(min[3]);
+            print2DCharArray(planarRegion2);
+
+            coordinates[i][0] = min[2]; // x
+            coordinates[i][1] = min[1]; // y
+            i++;
+        }
 
         return coordinates;
     }
@@ -223,8 +260,8 @@ public class BarrierCoverageSimulator {
      * assumptions that the camera sensor has a 45 degree viewing
      * angle and that it can view the entire width of the plane.
      * @param planarRegion
-     * @param row The row on which the sensor is placed.
-     * @param col The column to the right of where the sensor is placed.
+     * @param row The row at which the sensor is placed.
+     * @param col The column at which the sensor is placed.
      * @param direction The direction the camera is facing (1 for right, 2
      *                  for up, 3 for left, 4 for down).
      */
@@ -240,7 +277,7 @@ public class BarrierCoverageSimulator {
 
         // Camera facing right
         if (direction == 1) {
-            for (int x = col; x < planarRegion[row].length; x++) {
+            for (int x = col + 1; x < planarRegion[row].length; x++) {
                 if (planarRegion[row][x] == 'B') {
                     planarRegion[row][x] = 'C';
                 }
@@ -254,7 +291,7 @@ public class BarrierCoverageSimulator {
 
         // Camera facing up
         if (direction == 2) {
-            for (int y = row; y > 0; y--) {
+            for (int y = row - 1; y >= 0; y--) {
                 if (planarRegion[y][col] == 'B') {
                     planarRegion[y][col] = 'C';
                 }
@@ -268,7 +305,7 @@ public class BarrierCoverageSimulator {
 
         // Camera facing left
         if (direction == 3) {
-            for (int x = col; x > 0; x--) {
+            for (int x = col - 1; x >= 0; x--) {
                 if (planarRegion[row][x] == 'B') {
                     planarRegion[row][x] = 'C';
                 }
@@ -282,7 +319,7 @@ public class BarrierCoverageSimulator {
 
         // Camera facing down
         if (direction == 4) {
-            for (int y = row; y < planarRegion.length; y++) {
+            for (int y = row + 1; y < planarRegion.length; y++) {
                 if (planarRegion[y][col] == 'B') {
                     planarRegion[y][col] = 'C';
                 }
@@ -349,22 +386,22 @@ public class BarrierCoverageSimulator {
         for (int y = 0; y < planarRegion.length; y++) {
             for (int x = 0; x < planarRegion[y].length; x++) {
                 // Place the top line
-                if (x > 1 && x < 7 && y == 2) {
+                if (x > 0 && x < 7 && y == 1) {
                     planarRegion[y][x] = 'B';
                 }
 
                 // Place the bottom line
-                if (x > 1 && x < 7 && y == 6) {
+                if (x > 0 && x < 7 && y == 12) {
                     planarRegion[y][x] = 'B';
                 }
 
                 // Place the left line
-                if (x == 2 && y > 1 && y < 6) {
+                if (x == 1 && y > 0 && y < 12) {
                     planarRegion[y][x] = 'B';
                 }
 
                 // Place the right line
-                if (x == 6 && y > 1 && y < 6) {
+                if (x == 6 && y > 0 && y < 12) {
                     planarRegion[y][x] = 'B';
                 }
             }
