@@ -1,5 +1,4 @@
 import java.util.Random;
-import java.util.ArrayList;
 
 /**
  * BarrierCoverageSimulator simulates the 2D planar region
@@ -32,10 +31,20 @@ public class BarrierCoverageSimulator {
 
         int[][] coordinates = getAndPlaceGreedy(planarRegion);
 
-//        for (int i = 0; i < coordinates.length; i++) {
-//            System.out.println("(" + coordinates[i][0] + ", " +
-//                    coordinates[i][1] + ")");
-//        }
+        for (int i = 0; i < coordinates.length; i++) {
+            char[][] p = getPlanarRegion();
+            placeLines(p);
+
+            int x = coordinates[i][0];
+            int y = coordinates[i][1];
+            int direction = coordinates[i][2];
+
+            System.out.println("\n\rLocation: (" + x + ", " +
+                    y + ")\n\rDirection: " + direction);
+
+            updateCovered(p, y, x, direction, 5, 1);
+            print2DCharArray(p);
+        }
     }
 
 
@@ -110,8 +119,12 @@ public class BarrierCoverageSimulator {
      */
     public int[][] getAndPlaceGreedy(char[][] planarRegion)
     {
-        int[][] coordinates = new int[10][2];
+        int[][] coordinates;
 
+        // An array with each location, direction, and the number of uncovered barrier
+        // points there are at that location and direction.
+        // Indices: 0: x. 1: y. 2: direction. 3: number of uncovered barrier points.
+        int[][] locations = new int[planarRegion.length * planarRegion[0].length * 4][4];
 
         // The planar region used to determine which point is best for sensor
         char[][] planarRegion1 = planarRegion;
@@ -123,22 +136,30 @@ public class BarrierCoverageSimulator {
 
         System.out.println("Initial:"); // DELETE THIS LINE
         print2DCharArray(planarRegion1); // DELETE THIS LINE
-        System.out.println();  // DELETE THIS LINE
 
 
 
 
-        // min indices: 0: number of uncovered points. 1: row. 2: col. 3: direction.
+        // Indices: 0: number of uncovered points. 1: row. 2: col. 3: direction.
         int[] min = new int[4];
         min[0] = getNumUncoveredPoints(planarRegion1);
 
         // Goal: decrease number of uncovered barrier points to 0.
-        int i = 1;
-        while (getNumUncoveredPoints(planarRegion2) > 0) {
+//        int i = 1;
+//        while (getNumUncoveredPoints(planarRegion2) > 0) {
+        int index = 0;
             for (int row = 0; row < planarRegion1.length; row++) {
                 for (int col = 0; col < planarRegion1[row].length; col++) {
                     // Check coverage at this point when sensor faces right
                     updateCovered(planarRegion1, row, col, 1, 5, 1);
+
+                    // Enter this location, direction, and the number of barrier points covered.
+                    locations[index][0] = col; // x
+                    locations[index][1] = row; // y
+                    locations[index][2] = 1; // direction
+                    locations[index][3] = getNumUncoveredPoints(planarRegion1);
+                    index++;
+
                     if (getNumUncoveredPoints(planarRegion1) < min[0]) {
                         min[0] = getNumUncoveredPoints(planarRegion1);
                         min[1] = row;
@@ -146,20 +167,19 @@ public class BarrierCoverageSimulator {
                         min[3] = 1;
                     }
 
-//                    System.out.println("After update." + " Direction: 1"); // DELETE THIS LINE
-//                    print2DCharArray(planarRegion1); // DELETE THIS LINE
-//                    System.out.println();  // DELETE THIS LINE
-
                     // reset planar region to what it was at the beginning of
                     // this while-loop iteration
                     planarRegion1 = copy(planarRegion1, planarRegion2);
 
-//                    System.out.println("After copy." + " Direction: 1"); // DELETE THIS LINE
-//                    print2DCharArray(planarRegion1); // DELETE THIS LINE
-//                    System.out.println();  // DELETE THIS LINE
-
                     // Check coverage at this point when sensor faces up
                     updateCovered(planarRegion1, row, col, 2, 5, 1);
+
+                    locations[index][0] = col; // x
+                    locations[index][1] = row; // y
+                    locations[index][2] = 2; // direction
+                    locations[index][3] = getNumUncoveredPoints(planarRegion1);
+                    index++;
+
                     if (getNumUncoveredPoints(planarRegion1) < min[0]) {
                         min[0] = getNumUncoveredPoints(planarRegion1);
                         min[1] = row;
@@ -167,20 +187,19 @@ public class BarrierCoverageSimulator {
                         min[3] = 2;
                     }
 
-//                    System.out.println("After update." + " Direction: 2"); // DELETE THIS LINE
-//                    print2DCharArray(planarRegion1); // DELETE THIS LINE
-//                    System.out.println();  // DELETE THIS LINE
-
                     // reset planar region to what it was at the beginning of
                     // this while-loop iteration
-                    planarRegion1 = copy(planarRegion1, planarRegion2);;
-
-//                    System.out.println("After copy." + " Direction: 2"); // DELETE THIS LINE
-//                    print2DCharArray(planarRegion1); // DELETE THIS LINE
-//                    System.out.println();  // DELETE THIS LINE
+                    planarRegion1 = copy(planarRegion1, planarRegion2);
 
                     // Check coverage at this point when sensor faces left
                     updateCovered(planarRegion1, row, col, 3, 5, 1);
+
+                    locations[index][0] = col; // x
+                    locations[index][1] = row; // y
+                    locations[index][2] = 3; // direction
+                    locations[index][3] = getNumUncoveredPoints(planarRegion1);
+                    index++;
+
                     if (getNumUncoveredPoints(planarRegion1) < min[0]) {
                         min[0] = getNumUncoveredPoints(planarRegion1);
                         min[1] = row;
@@ -188,20 +207,21 @@ public class BarrierCoverageSimulator {
                         min[3] = 3;
                     }
 
-//                    System.out.println("After update." + " Direction: 3"); // DELETE THIS LINE
-//                    print2DCharArray(planarRegion1); // DELETE THIS LINE
-//                    System.out.println();  // DELETE THIS LINE
 
                     // reset planar region to what it was at the beginning of
                     // this while-loop iteration
-                    planarRegion1 = copy(planarRegion1, planarRegion2);;
+                    planarRegion1 = copy(planarRegion1, planarRegion2);
 
-//                    System.out.println("After copy." + " Direction: 3"); // DELETE THIS LINE
-//                    print2DCharArray(planarRegion1); // DELETE THIS LINE
-//                    System.out.println();  // DELETE THIS LINE
 
                     // Check coverage at this point when sensor faces down
                     updateCovered(planarRegion1, row, col, 4, 5, 1);
+
+                    locations[index][0] = col; // x
+                    locations[index][1] = row; // y
+                    locations[index][2] = 4; // direction
+                    locations[index][3] = getNumUncoveredPoints(planarRegion1);
+                    index++;
+
                     if (getNumUncoveredPoints(planarRegion1) < min[0]) {
                         min[0] = getNumUncoveredPoints(planarRegion1);
                         min[1] = row;
@@ -209,35 +229,22 @@ public class BarrierCoverageSimulator {
                         min[3] = 4;
                     }
 
-//                    System.out.println("After update." + " Direction: 4"); // DELETE THIS LINE
-//                    print2DCharArray(planarRegion1); // DELETE THIS LINE
-//                    System.out.println();  // DELETE THIS LINE
-
                     // reset
                     planarRegion1 = copy(planarRegion1, planarRegion2);
-
-//                    System.out.println("After copy." + " Direction: 4"); // DELETE THIS LINE
-//                    print2DCharArray(planarRegion1); // DELETE THIS LINE
-//                    System.out.println();  // DELETE THIS LINE
                 }
             }
 
-            // TODO: remove the following chunk of code. Put it somewhere else
-//            planarRegion1 = getPlanarRegion();
-//            placeLines(planarRegion1);
-//            updateCovered(planarRegion1, min[1], min[2], min[3]);
-//            planarRegion1[min[1]][min[2]] = 'S';
-            updateCovered(planarRegion2, min[1], min[2], min[3], 5, 1);
-//            planarRegion2[min[1]][min[2]] = 'S';
-            System.out.println("Iteration: " + i +
-                    "\n\rDirection: " + min[3]);
-            System.out.println("Location: (" + min[2] + ", " + min[1] + ")");
-            print2DCharArray(planarRegion2);
+            // Remove the following chunk of code. Put it somewhere else
+//            updateCovered(planarRegion2, min[1], min[2], min[3], 5, 1);
+//            System.out.println("Iteration: " + // i +
+//                    "\n\rDirection: " + min[3]);
+//            System.out.println("Location: (" + min[2] + ", " + min[1] + ")");
+//            print2DCharArray(planarRegion2);
 
-            coordinates[i][0] = min[2]; // x
-            coordinates[i][1] = min[1]; // y
-            i++;
-        }
+//            i++;
+//        }
+
+        coordinates = findBestLocations(locations);
 
         return coordinates;
     }
@@ -358,6 +365,41 @@ public class BarrierCoverageSimulator {
             updateCovered(planarRegion, row + 2, col - 1, 4,
                     maxSenseRange - 2, callNum + 1);
         }
+    }
+
+    /**
+     *
+     * @param locations The second dimension array must have 4 elements. (That is,
+     *                  int[][] locations = new int[_][4].)
+     * @return
+     */
+    public int[][] findBestLocations(int[][] locations)
+    {
+        int[][] bestLocations = new int[10][3];
+
+        // Sort locations according to the number of uncovered barrier points.
+        // The location with the least number of uncovered barrier points will
+        // be first in the array.
+        for (int i = 0; i < locations.length - 1; i++) {
+            for (int j = 0; j < locations.length - i - 1; j++) {
+                if (locations[j][3] > locations[j + 1][3]) {
+                    int[] tmp = new int[4];
+                    for (int k = 0; k < 4; k++) {
+                        tmp[k] = locations[j][k];
+                        locations[j][k] = locations[j + 1][k];
+                        locations[j + 1][k] = tmp[k];
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < 10; i++) {
+            bestLocations[i][0] = locations[i][0]; // x
+            bestLocations[i][1] = locations[i][1]; // y
+            bestLocations[i][2] = locations[i][2]; // direction
+        }
+
+        return bestLocations;
     }
 
 
