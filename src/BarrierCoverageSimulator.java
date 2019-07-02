@@ -27,7 +27,6 @@ public class BarrierCoverageSimulator {
     {
         char[][] planarRegion = getPlanarRegion();
         placeLines(planarRegion);
-//        print2DCharArray(planarRegion);
 
         int[][] coordinates = getAndPlaceGreedy(planarRegion);
 
@@ -45,6 +44,8 @@ public class BarrierCoverageSimulator {
             updateCovered(p, y, x, direction, 5, 1);
             print2DCharArray(p);
         }
+
+        createTree();
     }
 
 
@@ -368,12 +369,12 @@ public class BarrierCoverageSimulator {
     }
 
     /**
-     *
+     * Used by getAndPlaceGreedy.
      * @param locations The second dimension array must have 4 elements. (That is,
      *                  int[][] locations = new int[_][4].)
      * @return
      */
-    public int[][] findBestLocations(int[][] locations)
+    private int[][] findBestLocations(int[][] locations)
     {
         int[][] bestLocations = new int[10][3];
 
@@ -400,6 +401,59 @@ public class BarrierCoverageSimulator {
         }
 
         return bestLocations;
+    }
+
+
+    /**
+     * Create binary tree for heuristic algorithm.
+     */
+    public void createTree()
+    {
+        Node root = new Node(4, 7);
+
+        char[][] planarRegion = getPlanarRegion();
+        placeLines(planarRegion);
+        int[][] coordinates = getAndPlaceGreedy(planarRegion);
+
+        for (int i = 0; i < coordinates.length; i++) {
+            addNode(root, coordinates[i][0], coordinates[i][1]);
+        }
+
+        traverseInOrder(root);
+    }
+
+
+    private Node addNode(Node current, int x, int y)
+    {
+        if (current == null) {
+            return new Node(x, y);
+        }
+
+        // Perhaps the tree structure should be modified so that
+        // any location with y < 7 is on the left, while any location
+        //  with y >= 7 is on the right. Locations with identical y values
+        // can then be sorted by x values.
+        if (x < current.x && y < current.y) {
+            current.left = addNode(current.left, x, y);
+        }
+        else {
+            current.right = addNode(current.right, x, y);
+        }
+
+        return current;
+    }
+
+    /**
+     * Depth first search traversal method.
+     * @param node The node at which the traversal begins.
+     */
+    public void traverseInOrder(Node node)
+    {
+        if (node != null) {
+            traverseInOrder(node.left);
+            System.out.println("(" + node.x + ", " + node.y + ")");
+            traverseInOrder(node.right);
+        }
     }
 
 
