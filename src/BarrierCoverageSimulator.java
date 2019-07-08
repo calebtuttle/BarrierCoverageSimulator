@@ -26,17 +26,16 @@ public class BarrierCoverageSimulator {
     public BarrierCoverageSimulator()
     {
         char[][] planarRegion = getPlanarRegion();
-        placeLines(planarRegion);
 
-        int[][] coordinates = getAndPlaceGreedy(planarRegion);
+        int[][] ranCoFinal = getRandomCoordinatesv3();
 
-        for (int i = 0; i < coordinates.length; i++) {
+
+        for (int i = 0; i < ranCoFinal.length; i++) {
             char[][] p = getPlanarRegion();
-            placeLines(p);
 
-            int x = coordinates[i][0];
-            int y = coordinates[i][1];
-            int direction = coordinates[i][2];
+            int x = ranCoFinal[i][0];
+            int y = ranCoFinal[i][1];
+            int direction = ranCoFinal[i][2];
 
             System.out.println("\n\rLocation: (" + x + ", " +
                     y + ")\n\rDirection: " + direction);
@@ -45,7 +44,25 @@ public class BarrierCoverageSimulator {
             print2DCharArray(p);
         }
 
-        createTree();
+
+//        int[][] coordinates = getAndPlaceGreedy(planarRegion);
+//
+//        for (int i = 0; i < coordinates.length; i++) {
+//            char[][] p = getPlanarRegion();
+//            placeLines(p);
+//
+//            int x = coordinates[i][0];
+//            int y = coordinates[i][1];
+//            int direction = coordinates[i][2];
+//
+//            System.out.println("\n\rLocation: (" + x + ", " +
+//                    y + ")\n\rDirection: " + direction);
+//
+//            updateCovered(p, y, x, direction, 5, 1);
+//            print2DCharArray(p);
+//        }
+//
+//        createTree();
     }
 
 
@@ -89,6 +106,78 @@ public class BarrierCoverageSimulator {
     }
 
     /**
+     * Get 10 random (x, y) coordinates within the 7 x 15 planar
+     * region. The first element in the 2nd dimension of the array
+     * is always an x coordinate, while the second element is the y
+     * coordinate.
+     * @param direction The camera's facing direction. 1 = right.
+     *                  2 = up. 3 = left. 4 = down.
+     * @return a 2D array of 10 (x, y) coordinates along with the
+     *         given direction.
+     */
+    public int[][] getRandomCoordinatesv2(int direction)
+    {
+        int[][] coordinates = new int[10][3];
+        gen = new Random();
+
+        for (int i = 0; i < 10; i++) {
+            int x = gen.nextInt(7);
+            int y = gen.nextInt(15);
+
+            coordinates[i][0] = x;
+            coordinates[i][1] = y;
+            coordinates[i][2] = direction;
+        }
+
+        return coordinates;
+    }
+
+    /**
+     * Get 10 random (x, y) coordinates within the 7 x 15 planar
+     * region. The first element in the 2nd dimension of the array
+     * is always an x coordinate, while the second element is the y
+     * coordinate.
+     * @return a 2D array of 40 (x, y) coordinates, 10 coordinates for
+     * each of the 4 directions.
+     */
+    public int[][] getRandomCoordinatesv3()
+    {
+        int[][] ranCoFinal = new int[40][3]; // random coordinates
+        int[][] ranCo1 = getRandomCoordinatesv2(1);
+        int[][] ranCo2 = getRandomCoordinatesv2(2);
+        int[][] ranCo3 = getRandomCoordinatesv2(3);
+        int[][] ranCo4 = getRandomCoordinatesv2(4);
+        for (int i = 0; i < 40; i++) {
+            if (i < 10) { // direction 1
+                ranCoFinal[i][0] = ranCo1[i][0];
+                ranCoFinal[i][1] = ranCo1[i][1];
+                ranCoFinal[i][2] = ranCo1[i][2];
+            }
+            else if (i < 20) { // direction 2
+                int j = i - 10;
+                ranCoFinal[i][0] = ranCo2[j][0];
+                ranCoFinal[i][1] = ranCo2[j][1];
+                ranCoFinal[i][2] = ranCo2[j][2];
+            }
+            else if (i < 30) { // direction 3
+                int j = i - 20;
+                ranCoFinal[i][0] = ranCo3[j][0];
+                ranCoFinal[i][1] = ranCo3[j][1];
+                ranCoFinal[i][2] = ranCo3[j][2];
+            }
+            else if (i < 40) { // direction 4
+                int j = i - 30;
+                ranCoFinal[i][0] = ranCo4[j][0];
+                ranCoFinal[i][1] = ranCo4[j][1];
+                ranCoFinal[i][2] = ranCo4[j][2];
+            }
+        }
+
+        return ranCoFinal;
+    }
+
+
+    /**
      * Place camera sensors (denoted by the char 'S') in a
      * the given planar region according to the random algorithm.
      * @return The given planar region updated with randomly
@@ -97,6 +186,10 @@ public class BarrierCoverageSimulator {
     public char[][] placeRandomly(char[][] planarRegion)
     {
         int[][] coordinates = getRandomCoordinates();
+
+        char[][] planarRegion1 = planarRegion;
+        char[][] planarRegion2 = new char[planarRegion1.length][planarRegion1[0].length];
+        planarRegion2 = copy(planarRegion2, planarRegion1);
 
         for (int i = 0; i < coordinates.length; i++) {
             int x = coordinates[i][0];
@@ -154,6 +247,14 @@ public class BarrierCoverageSimulator {
                     // Check coverage at this point when sensor faces right
                     updateCovered(planarRegion1, row, col, 1, 5, 1);
 
+
+//                    // DELETE ME
+//                    System.out.println("Position: (" + locations[index][0] + ", " +
+//                            locations[index][1] + ")");
+//                    System.out.println("Direction: " + locations[index][2]);
+//                    print2DCharArray(planarRegion1);
+
+
                     // Enter this location, direction, and the number of barrier points covered.
                     locations[index][0] = col; // x
                     locations[index][1] = row; // y
@@ -175,6 +276,16 @@ public class BarrierCoverageSimulator {
                     // Check coverage at this point when sensor faces up
                     updateCovered(planarRegion1, row, col, 2, 5, 1);
 
+
+//
+//                    // DELETE ME
+//                    System.out.println("Position: (" + locations[index][0] + ", " +
+//                            locations[index][1] + ")");
+//                    System.out.println("Direction: " + locations[index][2]);
+//                    print2DCharArray(planarRegion1);
+
+
+
                     locations[index][0] = col; // x
                     locations[index][1] = row; // y
                     locations[index][2] = 2; // direction
@@ -194,6 +305,14 @@ public class BarrierCoverageSimulator {
 
                     // Check coverage at this point when sensor faces left
                     updateCovered(planarRegion1, row, col, 3, 5, 1);
+
+
+//                    // DELETE ME
+//                    System.out.println("Position: (" + locations[index][0] + ", " +
+//                            locations[index][1] + ")");
+//                    System.out.println("Direction: " + locations[index][2]);
+//                    print2DCharArray(planarRegion1);
+
 
                     locations[index][0] = col; // x
                     locations[index][1] = row; // y
@@ -216,6 +335,14 @@ public class BarrierCoverageSimulator {
 
                     // Check coverage at this point when sensor faces down
                     updateCovered(planarRegion1, row, col, 4, 5, 1);
+
+
+//                    // DELETE ME
+//                    System.out.println("Position: (" + locations[index][0] + ", " +
+//                            locations[index][1] + ")");
+//                    System.out.println("Direction: " + locations[index][2]);
+//                    print2DCharArray(planarRegion1);
+
 
                     locations[index][0] = col; // x
                     locations[index][1] = row; // y
@@ -293,8 +420,8 @@ public class BarrierCoverageSimulator {
         // Camera facing right
         if (direction == 1) {
             // sensingLimit = the first point the sensor cannot see
-            int sensingLimit = (planarRegion[row].length < (col + maxSenseRange)) ?
-                    planarRegion[row].length : (col + maxSenseRange);
+            int sensingLimit = (planarRegion[row].length < (col + maxSenseRange + 1)) ?
+                    planarRegion[row].length : (col + maxSenseRange + 1);
 
             for (int x = col; x < sensingLimit; x++) {
                 if (planarRegion[row][x] == 'B') {
@@ -350,8 +477,8 @@ public class BarrierCoverageSimulator {
 
         // Camera facing down
         if (direction == 4) {
-            int sensingLimit = (planarRegion.length < (row + maxSenseRange)) ?
-                    planarRegion.length : (row + maxSenseRange);
+            int sensingLimit = (planarRegion.length < (row + maxSenseRange + 1)) ?
+                    planarRegion.length : (row + maxSenseRange + 1);
 
             for (int y = row; y < sensingLimit; y++) {
                 if (planarRegion[y][col] == 'B') {
@@ -394,6 +521,10 @@ public class BarrierCoverageSimulator {
             }
         }
 
+//        for (int i = 0; i < locations.length; i++) {
+//            System.out.println(locations[i][3]);
+//        }
+
         for (int i = 0; i < 10; i++) {
             bestLocations[i][0] = locations[i][0]; // x
             bestLocations[i][1] = locations[i][1]; // y
@@ -423,6 +554,15 @@ public class BarrierCoverageSimulator {
     }
 
 
+    /**
+     * Add a node to the tree.
+     * @param current The current node. When this method is called
+     *                outside of itself, current should be the root
+     *                node.
+     * @param x The x value of the new node.
+     * @param y The y value of the new node.
+     * @return The root node of the tree with the added node.
+     */
     private Node addNode(Node current, int x, int y)
     {
         if (current == null) {
@@ -511,6 +651,8 @@ public class BarrierCoverageSimulator {
                 planarRegion[y][x] = '.';
             }
         }
+
+        placeLines(planarRegion);
 
         return planarRegion;
     }
