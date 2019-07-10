@@ -27,8 +27,8 @@ public class BarrierCoverageSimulator {
     {
         char[][] planarRegion = getPlanarRegion();
 
-//        int[][] ranCoFinal = getRandomCoordinatesV3();
-//        printSequenceOfGraphs(ranCoFinal);
+        int[][] ranCoFinal = getRandomCoordinatesV3();
+        printSequenceOfGraphs(ranCoFinal);
 
 //        int[][] coordinates = getAndPlaceGreedy(planarRegion);
 //        printSequenceOfGraphs(coordinates);
@@ -36,10 +36,7 @@ public class BarrierCoverageSimulator {
 //        int[][] greedy2 = getAndPlaceGreedyV2(planarRegion);
 //        printSequenceOfGraphs(greedy2);
 
-        int[][] coordinates = getAndPlaceHeuristic(planarRegion);
-        printCoordinates(coordinates);
-
-//        createTree();
+//        int[][] coordinates = getAndPlaceHeuristic(planarRegion);
     }
 
 
@@ -105,6 +102,15 @@ public class BarrierCoverageSimulator {
             coordinates[i][0] = x;
             coordinates[i][1] = y;
             coordinates[i][2] = direction;
+
+            // Make sure the random coordinate is not on a barrier line
+            char[][] planarRegion = getPlanarRegion();
+            int numBarrierPoints = getNumUncoveredPoints(planarRegion);
+
+            updateCovered(planarRegion, y, x, direction, 5, 1);
+            if (numBarrierPoints == getNumUncoveredPoints(planarRegion)) {
+                i--;
+            }
         }
 
         return coordinates;
@@ -114,7 +120,7 @@ public class BarrierCoverageSimulator {
      * Get 10 random (x, y) coordinates within the 7 x 15 planar
      * region. The first element in the 2nd dimension of the array
      * is always an x coordinate, while the second element is the y
-     * coordinate.
+     * coordinate. This method relies on getRandomCoordinatesV2.
      * @return a 2D array of 40 (x, y) coordinates, 10 coordinates for
      * each of the 4 directions.
      */
@@ -125,6 +131,7 @@ public class BarrierCoverageSimulator {
         int[][] ranCo2 = getRandomCoordinatesV2(2);
         int[][] ranCo3 = getRandomCoordinatesV2(3);
         int[][] ranCo4 = getRandomCoordinatesV2(4);
+
         for (int i = 0; i < 40; i++) {
             if (i < 10) { // direction 1
                 ranCoFinal[i][0] = ranCo1[i][0];
@@ -152,31 +159,6 @@ public class BarrierCoverageSimulator {
         }
 
         return ranCoFinal;
-    }
-
-
-    /**
-     * Place camera sensors (denoted by the char 'S') in a
-     * the given planar region according to the random algorithm.
-     * @return The given planar region updated with randomly
-     *          placed camera sensors.
-     */
-    public char[][] placeRandomly(char[][] planarRegion)
-    {
-        int[][] coordinates = getRandomCoordinates();
-
-        char[][] planarRegion1 = planarRegion;
-        char[][] planarRegion2 = new char[planarRegion1.length][planarRegion1[0].length];
-        planarRegion2 = copy(planarRegion2, planarRegion1);
-
-        for (int i = 0; i < coordinates.length; i++) {
-            int x = coordinates[i][0];
-            int y = coordinates[i][1];
-
-            planarRegion[y][x] = 'S';
-        }
-
-        return planarRegion;
     }
 
 
@@ -610,12 +592,10 @@ public class BarrierCoverageSimulator {
 
         for (int i = 0; i < 4; i++) {
             // The minimum number of uncovered barrier-line points
-            int min = getNumUncoveredPoints(planarRegion1);
+            int min = 18;
 
             for (int j = 0; j < 10; j++) {
                 for (int k = j + 1; k < 10; k++) {
-//                    print2DCharArray(planarRegion1); // DELETE THIS LINE
-//                    System.out.println(); // DELETE THIS LINE
 
                     int iAdd = i * 10; // index addition
 
@@ -631,9 +611,6 @@ public class BarrierCoverageSimulator {
                     int d2 = greedyCo[k + iAdd][2]; // direction
                     updateCovered(planarRegion1, row2, col2, d2, 5, 1);
 
-//                    print2DCharArray(planarRegion1); // DELETE THIS LINE
-//                    System.out.println(); // DELETE THIS LINE
-
                     int uncovered = getNumUncoveredPoints(planarRegion1);
 
                     if (uncovered < min) {
@@ -642,7 +619,7 @@ public class BarrierCoverageSimulator {
                         coordinates[coIndex][2] = d1;
 
                         coordinates[coIndex + 1][0] = col2;
-                        coordinates[coIndex + 1][1] = row1;
+                        coordinates[coIndex + 1][1] = row2;
                         coordinates[coIndex + 1][2] = d2;
 
                         min = uncovered;
@@ -652,6 +629,19 @@ public class BarrierCoverageSimulator {
                     planarRegion1 = copy(planarRegion1, planarRegion2);
                 }
             }
+
+            // This prints a graph containing the two sensors that have just
+            // been found to be the best positions for a certain direction.
+            updateCovered(planarRegion1, coordinates[coIndex][1], coordinates[coIndex][0],
+                    coordinates[coIndex][2], 5, 1);
+            updateCovered(planarRegion1, coordinates[coIndex + 1][1], coordinates[coIndex + 1][0],
+                    coordinates[coIndex + 1][2], 5, 1);
+            System.out.println("\n\rDirection: " + coordinates[coIndex][2]);
+            System.out.println("Locations: (" + coordinates[coIndex][0] +", " + coordinates[coIndex][1] +
+                    "), (" + coordinates[coIndex + 1][0] + ", " + coordinates[coIndex + 1][1] + ")");
+            print2DCharArray(planarRegion1);
+            planarRegion1 = copy(planarRegion1, planarRegion2);
+
             coIndex += 2;
         }
 
@@ -661,7 +651,7 @@ public class BarrierCoverageSimulator {
                     coordinates[i][2], 5, 1);
         }
 
-        System.out.println();
+        System.out.println("\n\rFinal:");
         print2DCharArray(planarRegion2);
 
         return coordinates;
